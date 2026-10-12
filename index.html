@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Simulation pédagogique d'une inversion temporaire des contrôles.">
+  <title>CTRL//FLIP — Simulation pédagogique</title>
+  <style>
+    :root {
+      --bg: #080b14;
+      --panel: rgba(18, 24, 42, .78);
+      --line: rgba(146, 164, 205, .2);
+      --text: #eef3ff;
+      --muted: #9ca9c9;
+      --cyan: #65e8ff;
+      --violet: #a989ff;
+      --green: #7dffba;
+      --danger: #ff7895;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+      background: radial-gradient(circle at 78% 12%, #1a2550 0, transparent 35%),
+                  radial-gradient(circle at 10% 90%, #172c3a 0, transparent 32%), var(--bg);
+      display: grid; place-items: center; padding: 28px;
+    }
+    .shell { width: min(960px, 100%); }
+    header { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:20px; }
+    .brand { letter-spacing:.18em; font-size:.78rem; font-weight:800; color:var(--cyan); }
+    .badge { border:1px solid rgba(125,255,186,.35); color:var(--green); border-radius:999px; padding:7px 11px; font-size:.72rem; }
+    main { background:var(--panel); border:1px solid var(--line); border-radius:28px; overflow:hidden; box-shadow:0 24px 80px rgba(0,0,0,.35); backdrop-filter: blur(16px); }
+    .intro { padding:42px 44px 26px; }
+    h1 { margin:0; font-size:clamp(2.1rem, 6vw, 4.7rem); line-height:.95; letter-spacing:-.07em; max-width:680px; }
+    h1 span { color:var(--cyan); }
+    .intro p { color:var(--muted); max-width:620px; line-height:1.6; margin:22px 0 0; font-size:1.02rem; }
+    .toolbar { display:flex; align-items:center; gap:15px; flex-wrap:wrap; padding:0 44px 30px; }
+    button { border:0; border-radius:12px; padding:13px 18px; font-weight:800; cursor:pointer; color:#07111c; background:linear-gradient(135deg,var(--cyan),#b9f8ff); box-shadow:0 8px 25px rgba(101,232,255,.18); }
+    button:hover { transform:translateY(-1px); filter:brightness(1.06); }
+    button.stop { color:var(--text); background:rgba(255,120,149,.13); border:1px solid rgba(255,120,149,.36); box-shadow:none; }
+    button:focus-visible { outline:3px solid var(--violet); outline-offset:3px; }
+    #status { color:var(--muted); font-size:.9rem; }
+    .stage-wrap { padding:0 22px 22px; }
+    .stage { position:relative; min-height:350px; border:1px solid rgba(101,232,255,.22); border-radius:20px; overflow:hidden; background:linear-gradient(135deg,rgba(8,16,34,.95),rgba(15,22,46,.88)); cursor:crosshair; }
+    .stage::before { content:""; position:absolute; inset:0; opacity:.22; background-image:linear-gradient(rgba(101,232,255,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(101,232,255,.12) 1px,transparent 1px); background-size:32px 32px; }
+    .stage-note { position:absolute; top:18px; left:20px; color:var(--muted); font-size:.78rem; letter-spacing:.08em; text-transform:uppercase; }
+    .target { position:absolute; width:86px; height:86px; border-radius:50%; transform:translate(-50%,-50%); border:1px solid rgba(101,232,255,.5); box-shadow:0 0 0 12px rgba(101,232,255,.04), 0 0 38px rgba(101,232,255,.28); display:grid; place-items:center; transition:left .08s linear, top .08s linear; }
+    .target::before { content:""; width:11px; height:11px; border-radius:50%; background:var(--cyan); box-shadow:0 0 18px var(--cyan); }
+    .target::after { content:""; position:absolute; inset:14px; border:1px dashed rgba(101,232,255,.5); border-radius:50%; }
+    .cursor-label { position:absolute; transform:translate(18px, 16px); color:#c7f8ff; font-size:.7rem; background:rgba(6,13,27,.8); padding:5px 8px; border-radius:6px; border:1px solid rgba(101,232,255,.25); pointer-events:none; white-space:nowrap; }
+    .count { position:absolute; right:20px; top:17px; font-variant-numeric:tabular-nums; font-size:1.25rem; color:var(--cyan); }
+    footer { display:flex; justify-content:space-between; gap:18px; padding:0 44px 30px; color:#73809f; font-size:.76rem; line-height:1.5; }
+    @media (max-width:600px) { body{padding:14px}.intro{padding:30px 24px 22px}.toolbar{padding:0 24px 24px}.stage-wrap{padding:0 12px 12px}.stage{min-height:300px}footer{padding:0 24px 25px;display:block}footer span{display:block;margin-top:8px} }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header><div class="brand">CTRL//FLIP</div><div class="badge">MODE SÉCURISÉ · 100% LOCAL À LA PAGE</div></header>
+    <main>
+      <section class="intro">
+        <h1>Les contrôles<br><span>ne sont plus tout à fait droits.</span></h1>
+        <p>Une petite expérience de cybersécurité : pendant 10 secondes, le curseur <strong>dans cette zone uniquement</strong> se déplace à l’inverse de ta souris. Aucun réglage Windows n’est modifié.</p>
+      </section>
+      <div class="toolbar">
+        <button id="start">Lancer la simulation</button>
+        <button id="stop" class="stop" hidden>Arrêter</button>
+        <span id="status" aria-live="polite">Prêt à démarrer.</span>
+      </div>
+      <div class="stage-wrap"><div class="stage" id="stage" aria-label="Zone de simulation interactive">
+        <div class="stage-note">déplace ta souris ici</div><div class="count" id="count">10.0 s</div>
+        <div class="target" id="target"><span class="cursor-label">curseur simulé</span></div>
+      </div></div>
+      <footer><span>Simulation pédagogique — aucun accès au système.</span><span>Arrêt automatique · Échap · bouton Arrêter</span></footer>
+    </main>
+  </div>
+  <script>
+    const stage = document.querySelector('#stage');
+    const target = document.querySelector('#target');
+    const start = document.querySelector('#start');
+    const stop = document.querySelector('#stop');
+    const status = document.querySelector('#status');
+    const count = document.querySelector('#count');
+    let active = false, startedAt = 0, last = null, frame;
+    function centerTarget() { target.style.left = '50%'; target.style.top = '55%'; }
+    function finish(message='Simulation terminée. Rien n’a été modifié.') {
+      active = false; cancelAnimationFrame(frame); start.hidden = false; stop.hidden = true;
+      status.textContent = message; count.textContent = '10.0 s'; stage.style.cursor = 'crosshair';
+    }
+    function tick(now) {
+      if (!active) return;
+      const left = Math.max(0, 10000 - (now - startedAt));
+      count.textContent = (left / 1000).toFixed(1) + ' s';
+      if (left <= 0) return finish();
+      frame = requestAnimationFrame(tick);
+    }
+    function begin() {
+      active = true; startedAt = performance.now(); last = null; start.hidden = true; stop.hidden = false;
+      status.textContent = 'Simulation active — les mouvements sont inversés dans la zone.'; stage.style.cursor = 'none';
+      centerTarget(); frame = requestAnimationFrame(tick);
+    }
+    stage.addEventListener('pointermove', (event) => {
+      if (!active) return;
+      const rect = stage.getBoundingClientRect();
+      const x = event.clientX - rect.left, y = event.clientY - rect.top;
+      if (!last) { last = {x, y}; return; }
+      const dx = x - last.x, dy = y - last.y;
+      const currentX = parseFloat(target.style.left) / 100 * rect.width || rect.width / 2;
+      const currentY = parseFloat(target.style.top) / 100 * rect.height || rect.height * .55;
+      const nextX = Math.max(40, Math.min(rect.width - 40, currentX - dx));
+      const nextY = Math.max(55, Math.min(rect.height - 40, currentY - dy));
+      target.style.left = (nextX / rect.width * 100) + '%'; target.style.top = (nextY / rect.height * 100) + '%';
+      last = {x, y};
+    });
+    start.addEventListener('click', begin); stop.addEventListener('click', () => finish('Arrêt manuel. Aucun réglage système n’a été modifié.'));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && active) finish('Arrêt d’urgence avec Échap.'); });
+    centerTarget();
+  </script>
+</body>
+</html>
